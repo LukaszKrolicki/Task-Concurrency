@@ -2,6 +2,11 @@ package com.example.concurrency;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.Observable;
+import javafx.collections.ObservableList;
+import javafx.concurrent.ScheduledService;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -11,6 +16,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 public class Main extends Application {
     @Override
@@ -40,20 +46,42 @@ public class Main extends Application {
 
         //example2 of tasks
 
+        //service schedule task
+        service.setPeriod(Duration.seconds(5));
+
         startBtn.setOnAction(o->{
-            Thread bgThread = new Thread(task);
-            bgThread.setDaemon(true);
-            bgThread.start();
+            //normal task
+//            Thread bgThread = new Thread(task);
+//            bgThread.setDaemon(true);
+//            bgThread.start();
+
+            //service task
+            if(started){
+                service.restart();
+
+            }else{
+                service.start();
+                started=true;
+                startBtn.setText("Restart");
+            }
+
         });
 
         cancelBtn.setOnAction(o->{
-            task.cancel();
+            //normal task
+//            task.cancel();
+
+            //service task
+            service.cancel();
         });
+
+        //service task
+        resetBtn.setOnAction(o->{service.reset();});
 
         exitBtn.setOnAction(e->stage.close());
 
-        GridPane pane = new WorkerUI(task);
-        HBox box = new HBox(5,startBtn,cancelBtn,exitBtn);
+        GridPane pane = new WorkerUI(service); //task - if normal task
+        HBox box = new HBox(5,startBtn, resetBtn,cancelBtn,exitBtn);
         BorderPane root = new BorderPane();
         root.setCenter(pane);
         root.setBottom(box);
@@ -70,7 +98,28 @@ public class Main extends Application {
 
     Button exitBtn = new Button("Exit");
 
-    EvenNumTask task = new EvenNumTask(1,10,1000);
+    Button resetBtn = new Button("Reset");
+
+    //normal task
+    //EvenNumTask task = new EvenNumTask(1,10,1000);
+
+    //service task
+//    Service<ObservableList<Integer>> service = new Service<>(){
+//        @Override
+//        protected Task<ObservableList<Integer>> createTask(){
+//            return new EvenNumTask(1,10,1000);
+//        }
+//    };
+    //serviceTask
+    boolean started = false;
+
+    //scheduled service
+    ScheduledService<ObservableList<Integer>> service = new ScheduledService<ObservableList<Integer>>() {
+        @Override
+        protected Task<ObservableList<Integer>> createTask() {
+            return new EvenNumTask(1,10,100);
+        }
+    };
 
     public static void main(String[] args) {
         launch();
